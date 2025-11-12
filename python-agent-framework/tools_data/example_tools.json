@@ -1,0 +1,21 @@
+{
+  "tools": [
+    {
+      "name": "ExampleWeatherTool",
+      "description": "Get weather information for a location (example tool)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "string",
+            "description": "City or location name"
+          }
+        },
+        "required": [
+          "location"
+        ]
+      },
+      "code": "# Example implementation\nresult = f\"Weather for {location}: Sunny, 25°C\""
+    }
+  ]
+}
