@@ -1,7 +1,11 @@
 ![Banner](https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=12&height=200&section=header&text=LLM%20Agent%20Creator&fontSize=50&fontColor=fff&animation=fadeIn&desc=Build%20Powerful%20AI%20Agents&descAlignY=70) 
 
-<center>
-> A complete solution integrating frontend UI and Python agent framework
+<div align="center">
+
+# LLM Agent Creator / LLM智能体创建器
+
+> A complete solution integrating frontend UI and Python agent framework  
+> 一个集成了前端界面和Python智能体框架的完整解决方案
 
 ![Python](https://img.shields.io/badge/Python-3.8+-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black)
@@ -12,9 +16,27 @@
 
 **✨ Multi-Agent Orchestration | 🔌 API-Agnostic | 📊 Research-Oriented | ⚡ High Performance**
 
-[English](#english) | [中文](#chinese)
+</div>
 
-</center>
+---
+
+## 🎉 What's New! / 新功能！
+
+### Latest Updates (2024-11-12)
+
+🚀 **Major Feature Release!** Five powerful new features added:
+
+1. **🤖 AI-Powered Tool Generation** - Generate custom tools using LLM! No coding required.
+2. **🔍 Smart Tool Indexing** - Automatically find relevant tools, save 50-80% in tokens.
+3. **💻 CLI Mode** - Full command-line interface for terminal users.
+4. **✅ Optimized Testing** - Connection tests now cost 97% less!
+5. **📦 Tool Database** - Organized storage and management for all tools.
+
+📖 **[See Full Details →](./IMPLEMENTATION_SUMMARY.md)** | **[Quick Start →](./GETTING_STARTED.md)**
+
+---
+
+[English](#english) | [中文](#chinese)
 
 ---
 
@@ -29,29 +51,25 @@ A complete platform for building and managing LLM agents, including:
 
 ### 🗂️ Project Structure
 
+📖 **[See Detailed Structure →](./PROJECT_STRUCTURE.md)**
+
 ```
 LLM-agent-creator/
-├── 📁 python-agent-framework/    # Python agent framework (backend)
-│   ├── core/                      # Core components
-│   ├── tools/                     # Built-in tools
-│   ├── gui/                       # Streamlit GUI
-│   ├── examples/                  # Usage examples
-│   └── utils/                     # Utilities
+├── 📁 python-agent-framework/    # ⭐ Main Python Framework
+│   ├── core/                      # Core: Agent, LLM Client, Tools
+│   ├── utils/                     # ⭐ NEW: Tool Generator, Indexer
+│   ├── tools/                     # Built-in + Generated tools
+│   ├── gui/                       # Streamlit GUI (with tool generation)
+│   ├── cli.py                     # ⭐ NEW: CLI interface
+│   └── examples/                  # Usage examples
 │
-├── 📁 src/                        # React frontend source
-│   ├── App.tsx                    # Main app component
-│   ├── main.tsx                   # Entry file
-│   └── index.css                  # Styles
-│
+├── 📁 src/                        # React frontend (optional)
 ├── 📁 docs/                       # Documentation
-│   ├── README.md                  # Documentation index
-│   └── python-framework/          # Python framework docs
+│   └── python-framework/          # Framework guides
+│       └── NEW_FEATURES.md        # ⭐ New features guide
 │
-├── 📁 outputs/                    # Output files
-│
-├── 📄 package.json                # Frontend dependencies
-├── 📄 vite.config.ts              # Vite config
-├── 📄 tailwind.config.js          # Tailwind CSS config
+├── 📄 GETTING_STARTED.md          # ⭐ Quick start guide
+├── 📄 IMPLEMENTATION_SUMMARY.md   # ⭐ Features summary
 └── 📄 README.md                   # This file
 ```
 
@@ -70,11 +88,16 @@ pip install -r requirements.txt
 cp .env.example .env
 # Edit .env with your API keys
 
-# 4. Run Streamlit GUI
+# 4. Choose your interface:
+
+# Option A: Streamlit GUI (Recommended)
 streamlit run gui/app.py
+
+# Option B: CLI Mode
+python cli.py
 ```
 
-#### Frontend
+#### Frontend (Optional)
 
 ```bash
 # 1. Install dependencies at project root

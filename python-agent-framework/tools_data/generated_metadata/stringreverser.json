@@ -1,0 +1,15 @@
+{
+  "name": "StringReverser",
+  "description": "Reverse a string or text",
+  "file_path": "/Users/acquent/Desktop/Project Process/Github_Desktop/LLM-agent-creator/python-agent-framework/tools/generated/stringreverser.py",
+  "created_at": "2025-11-12T21:40:42.228687",
+  "input_parameters": [
+    {
+      "name": "text",
+      "type": "str",
+      "description": "The text to reverse"
+    }
+  ],
+  "expected_output": "The reversed string",
+  "dependencies": []
+}

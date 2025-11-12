@@ -23,6 +23,8 @@ from tools.research_tools import ScientificComputeTool, StatisticalTestTool, Uni
 from tools.data_tools import DataAnalysisTool, VisualizationTool, DataCleaningTool
 from utils.tool_storage import ToolStorageManager
 from utils.dynamic_tool import DynamicTool, load_tool_from_config
+from utils.tool_generator import ToolGenerator
+from utils.tool_indexer import ToolIndexer
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -48,6 +50,10 @@ def init_session_state():
         st.session_state.llm_client = None
     if 'tool_storage' not in st.session_state:
         st.session_state.tool_storage = ToolStorageManager()
+    if 'tool_generator' not in st.session_state:
+        st.session_state.tool_generator = None
+    if 'tool_indexer' not in st.session_state:
+        st.session_state.tool_indexer = ToolIndexer()
     if 'custom_tools' not in st.session_state:
         # Load custom tools from storage
         st.session_state.custom_tools = {}
@@ -106,18 +112,33 @@ def setup_llm_client():
         ["openai", "claude", "custom"]
     )
 
-    if st.sidebar.button("Connect | 连接"):
+    if st.sidebar.button("Test Connection | 测试连接"):
         if api_url and api_key:
-            try:
-                st.session_state.llm_client = LLMClient(
-                    api_url=api_url,
-                    api_key=api_key,
-                    model=model,
-                    api_type=api_type
-                )
-                st.sidebar.success("✅ Connected | 已连接")
-            except Exception as e:
-                st.sidebar.error(f"❌ Error: {str(e)}")
+            with st.spinner("Testing connection... | 测试连接中..."):
+                try:
+                    # Create client
+                    test_client = LLMClient(
+                        api_url=api_url,
+                        api_key=api_key,
+                        model=model,
+                        api_type=api_type
+                    )
+                    
+                    # Simple test with minimal cost
+                    test_response = test_client.chat(
+                        messages=[{"role": "user", "content": "Hi"}],
+                        max_tokens=5
+                    )
+                    
+                    if test_response.get("success"):
+                        st.session_state.llm_client = test_client
+                        st.session_state.tool_generator = ToolGenerator(test_client)
+                        st.sidebar.success("✅ Connected successfully! | 连接成功！")
+                    else:
+                        st.sidebar.error(f"❌ Connection failed: {test_response.get('error')}")
+                        
+                except Exception as e:
+                    st.sidebar.error(f"❌ Error: {str(e)}")
         else:
             st.sidebar.error("Please provide API URL and Key | 请提供API URL和密钥")
 
@@ -208,6 +229,187 @@ def chat_interface():
             "role": "assistant",
             "content": response
         })
+
+
+def tool_generator_interface():
+    """Tool generation interface using LLM. / 使用LLM生成工具的界面。"""
+    st.header("🛠️ Generate Custom Tool | 生成自定义工具")
+    
+    if not st.session_state.llm_client or not st.session_state.tool_generator:
+        st.warning("⚠️ Please connect to LLM first | 请先连接LLM")
+        return
+    
+    st.markdown("""
+    Generate custom tools by describing what you need. The LLM will create Python code for your tool.
+    通过描述需求来生成自定义工具。LLM将为您的工具创建Python代码。
+    """)
+    
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        st.subheader("📝 Tool Specification | 工具规格")
+        
+        tool_name = st.text_input(
+            "Tool Name | 工具名称 *",
+            placeholder="e.g., WeatherFetcher, PDFParser",
+            help="A descriptive name for your tool"
+        )
+        
+        description = st.text_area(
+            "Description | 描述 *",
+            placeholder="What does this tool do? Be specific...",
+            help="Describe what the tool does and its purpose",
+            height=100
+        )
+        
+        st.markdown("#### Input Parameters | 输入参数")
+        st.caption("Define what inputs your tool needs")
+        
+        # Dynamic parameter input
+        if 'param_count' not in st.session_state:
+            st.session_state.param_count = 1
+        
+        parameters = []
+        for i in range(st.session_state.param_count):
+            with st.expander(f"Parameter {i+1}", expanded=True):
+                pcol1, pcol2 = st.columns(2)
+                with pcol1:
+                    param_name = st.text_input(
+                        "Name",
+                        key=f"param_name_{i}",
+                        placeholder="e.g., url, text, data"
+                    )
+                    param_type = st.selectbox(
+                        "Type",
+                        ["str", "int", "float", "list", "dict", "bool"],
+                        key=f"param_type_{i}"
+                    )
+                with pcol2:
+                    param_desc = st.text_area(
+                        "Description",
+                        key=f"param_desc_{i}",
+                        placeholder="What is this parameter for?",
+                        height=100
+                    )
+                
+                if param_name and param_desc:
+                    parameters.append({
+                        "name": param_name,
+                        "type": param_type,
+                        "description": param_desc
+                    })
+        
+        pcol1, pcol2 = st.columns(2)
+        with pcol1:
+            if st.button("➕ Add Parameter"):
+                st.session_state.param_count += 1
+                st.rerun()
+        with pcol2:
+            if st.session_state.param_count > 1:
+                if st.button("➖ Remove Last"):
+                    st.session_state.param_count -= 1
+                    st.rerun()
+        
+        expected_output = st.text_area(
+            "Expected Output | 期望输出 *",
+            placeholder="Describe what the tool should return...",
+            help="What kind of result should this tool produce?",
+            height=80
+        )
+        
+    with col2:
+        st.subheader("⚙️ Advanced Options | 高级选项")
+        
+        implementation_details = st.text_area(
+            "Implementation Hints | 实现提示",
+            placeholder="Optional: Specific algorithms, methods to use...",
+            help="Provide specific implementation guidance if needed",
+            height=120
+        )
+        
+        dependencies = st.text_input(
+            "Dependencies | 依赖包",
+            placeholder="e.g., requests, beautifulsoup4",
+            help="Comma-separated list of required Python packages"
+        )
+        
+        st.markdown("---")
+        
+        # Show existing generated tools
+        st.markdown("### 📚 Generated Tools")
+        if st.session_state.tool_generator:
+            generated_tools = st.session_state.tool_generator.list_generated_tools()
+            if generated_tools:
+                for tool in generated_tools:
+                    with st.expander(f"🔧 {tool['name']}"):
+                        st.caption(tool['description'])
+                        st.text(f"Created: {tool['created_at'][:19]}")
+            else:
+                st.info("No tools generated yet")
+    
+    st.markdown("---")
+    
+    # Generate button
+    col1, col2, col3 = st.columns([2, 1, 1])
+    with col1:
+        if st.button("🚀 Generate Tool | 生成工具", type="primary", use_container_width=True):
+            # Validation
+            if not tool_name:
+                st.error("❌ Please provide a tool name | 请提供工具名称")
+                return
+            
+            if not description:
+                st.error("❌ Please provide a description | 请提供描述")
+                return
+            
+            if not parameters:
+                st.error("❌ Please define at least one parameter | 请定义至少一个参数")
+                return
+            
+            if not expected_output:
+                st.error("❌ Please describe expected output | 请描述期望输出")
+                return
+            
+            # Parse dependencies
+            deps = None
+            if dependencies:
+                deps = [d.strip() for d in dependencies.split(",")]
+            
+            # Generate tool
+            with st.spinner("🔄 Generating tool... This may take a moment | 生成工具中..."):
+                result = st.session_state.tool_generator.generate_tool(
+                    tool_name=tool_name,
+                    description=description,
+                    input_parameters=parameters,
+                    expected_output=expected_output,
+                    implementation_details=implementation_details if implementation_details else None,
+                    dependencies=deps
+                )
+            
+            if result.get("success"):
+                st.success(f"✅ Tool '{tool_name}' generated successfully! | 工具'{tool_name}'生成成功！")
+                
+                st.markdown("### 📄 Generated Code | 生成的代码")
+                st.code(result['code'], language='python')
+                
+                st.info(f"📁 Saved to: {result['file_path']}")
+                
+                # Refresh tool indexer
+                st.session_state.tool_indexer.refresh_index()
+                
+                # Reset parameter count
+                st.session_state.param_count = 1
+                
+            else:
+                st.error(f"❌ Failed to generate tool: {result.get('error')}")
+    
+    with col2:
+        if st.button("🔄 Reset Form | 重置表单", use_container_width=True):
+            st.session_state.param_count = 1
+            st.rerun()
+    
+    with col3:
+        st.button("📚 View Tools | 查看工具", use_container_width=True)
 
 
 def orchestrator_interface():
@@ -608,6 +810,7 @@ def main():
         "Select Page | 选择页面",
         ["Create Agent | 创建智能体",
          "Chat | 对话",
+         "Generate Tool | 生成工具",
          "Orchestration | 编排",
          "Analytics | 分析",
          "Tool Management | 工具管理"]
@@ -624,6 +827,8 @@ def main():
         create_agent_interface()
     elif "Chat" in page:
         chat_interface()
+    elif "Generate Tool" in page:
+        tool_generator_interface()
     elif "Orchestration" in page:
         orchestrator_interface()
     elif "Analytics" in page:
