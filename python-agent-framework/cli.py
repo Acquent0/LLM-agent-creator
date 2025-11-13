@@ -30,11 +30,21 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.agent import Agent
 from core.llm_client import LLMClient
 from core.prompts import ROLE_TEMPLATES
-from tools.base_tools import get_base_tools
+from tools.base_tools import (
+    CalculatorTool, FileIOTool, PythonREPLTool, 
+    TextProcessingTool, WebSearchTool
+)
+from tools.research_tools import (
+    ScientificComputeTool, StatisticalTestTool,
+    LiteratureSearchTool, UnitConverterTool
+)
+from tools.data_tools import (
+    DataAnalysisTool, VisualizationTool, DataCleaningTool
+)
 from utils.tool_generator import ToolGenerator
 from utils.tool_storage import ToolStorageManager
 from utils.agent_storage import AgentStorageManager
-from utils.dynamic_tool import DynamicToolLoader
+from utils.dynamic_tool import DynamicTool, load_tool_from_config
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -63,9 +73,8 @@ class AgentCLI:
         self.tool_generator = None
         self.tool_storage = ToolStorageManager()
         self.agent_storage = AgentStorageManager()
-        self.dynamic_loader = DynamicToolLoader()
         
-        self.base_tools = []
+        self.base_tools = {}  # Dictionary of built-in tools
         self.custom_tools = []
         self.generated_tools = []
         self.current_agent = None
@@ -196,7 +205,18 @@ class AgentCLI:
         print(f"\n{Colors.YELLOW}🔄 Loading tools...{Colors.ENDC}")
         
         # Load base tools
-        self.base_tools = get_base_tools()
+        self.base_tools = {
+            "Calculator": CalculatorTool(),
+            "File I/O": FileIOTool(),
+            "Python REPL": PythonREPLTool(),
+            "Text Processing": TextProcessingTool(),
+            "Scientific Compute": ScientificComputeTool(),
+            "Statistical Test": StatisticalTestTool(),
+            "Unit Converter": UnitConverterTool(),
+            "Data Analysis": DataAnalysisTool(),
+            "Visualization": VisualizationTool(),
+            "Data Cleaning": DataCleaningTool(),
+        }
         print(f"{Colors.GREEN}✅ Loaded {len(self.base_tools)} built-in tools{Colors.ENDC}")
         
         # Load custom tools
@@ -204,7 +224,7 @@ class AgentCLI:
             custom_tool_data = self.tool_storage.load_tools()
             for tool_data in custom_tool_data:
                 try:
-                    tool = self.dynamic_loader.create_tool_from_metadata(tool_data)
+                    tool = load_tool_from_config(tool_data)
                     if tool:
                         self.custom_tools.append(tool)
                 except Exception as e:
@@ -224,7 +244,7 @@ class AgentCLI:
                         try:
                             with open(filepath, 'r', encoding='utf-8') as f:
                                 tool_data = json.load(f)
-                                tool = self.dynamic_loader.create_tool_from_metadata(tool_data)
+                                tool = load_tool_from_config(tool_data)
                                 if tool:
                                     self.generated_tools.append(tool)
                         except Exception as e:
@@ -232,6 +252,11 @@ class AgentCLI:
                 print(f"{Colors.GREEN}✅ Loaded {len(self.generated_tools)} AI-generated tools{Colors.ENDC}")
         except:
             pass
+
+    def get_all_tools(self):
+        """Get all available tools as a list."""
+        all_tools = list(self.base_tools.values()) + self.custom_tools + self.generated_tools
+        return all_tools
 
     def llm_configuration_menu(self):
         """LLM configuration submenu."""
@@ -354,7 +379,7 @@ class AgentCLI:
 
     def view_tool_details(self):
         """View detailed information about a specific tool."""
-        all_tools = self.base_tools + self.custom_tools + self.generated_tools
+        all_tools = self.get_all_tools()
         if not all_tools:
             print(f"{Colors.RED}❌ No tools available{Colors.ENDC}")
             return
@@ -542,7 +567,7 @@ class AgentCLI:
         custom_inst = input(f"{Colors.CYAN}Custom instructions (optional): {Colors.ENDC}").strip() or None
         
         # Select tools
-        all_tools = self.base_tools + self.custom_tools + self.generated_tools
+        all_tools = self.get_all_tools()
         if not all_tools:
             print(f"{Colors.RED}❌ No tools available{Colors.ENDC}")
             return
@@ -572,7 +597,7 @@ class AgentCLI:
                 tools=selected_tools,
                 role=selected_role,
                 use_react=use_react,
-                custom_instructions=custom_inst
+                system_prompt=custom_inst
             )
             
             # Save agent
@@ -624,7 +649,7 @@ class AgentCLI:
                 agent_data = agents[choice - 1]
                 
                 # Load tools
-                all_tools = self.base_tools + self.custom_tools + self.generated_tools
+                all_tools = self.get_all_tools()
                 tool_names = agent_data.get('tools', [])
                 selected_tools = [t for t in all_tools if t.name in tool_names]
                 
@@ -635,7 +660,7 @@ class AgentCLI:
                     tools=selected_tools,
                     role=agent_data.get('role', '通用助手'),
                     use_react=agent_data.get('use_react', True),
-                    custom_instructions=agent_data.get('custom_instructions')
+                    system_prompt=agent_data.get('custom_instructions')
                 )
                 
                 print(f"{Colors.GREEN}✅ Agent '{agent_data['name']}' loaded successfully!{Colors.ENDC}")
@@ -773,7 +798,7 @@ class AgentCLI:
         agent_name = input(f"{Colors.CYAN}Agent name (default: QuickAgent): {Colors.ENDC}").strip() or "QuickAgent"
         
         # Use default settings
-        all_tools = self.base_tools + self.custom_tools + self.generated_tools
+        all_tools = self.get_all_tools()
         selected_tools = all_tools[:5] if len(all_tools) > 5 else all_tools
         
         self.current_agent = Agent(
