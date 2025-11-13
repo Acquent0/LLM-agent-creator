@@ -17,6 +17,17 @@ from datetime import datetime
 from .llm_client import LLMClient
 from .tool import Tool
 
+# Import prompt templates
+try:
+    from .prompts import get_system_prompt, format_tools_description, ROLE_TEMPLATES
+except ImportError:
+    # Fallback if prompts module doesn't exist
+    ROLE_TEMPLATES = {}
+    def get_system_prompt(*args, **kwargs):
+        return ""
+    def format_tools_description(tools):
+        return ""
+
 
 class Agent:
     """
@@ -41,9 +52,11 @@ class Agent:
         llm_client: LLMClient,
         tools: Optional[List[Tool]] = None,
         system_prompt: Optional[str] = None,
+        role: str = "通用助手",
         memory_enabled: bool = True,
         max_memory_tokens: int = 4000,
-        max_iterations: int = 10
+        max_iterations: int = 10,
+        use_react: bool = True
     ):
         """
         Initialize the Agent.
@@ -53,15 +66,33 @@ class Agent:
             name: Agent name / 智能体名称
             llm_client: LLM client instance / LLM客户端实例
             tools: List of available tools / 可用工具列表
-            system_prompt: Custom system prompt / 自定义系统提示
+            system_prompt: Custom system prompt (will be added to role template) / 自定义系统提示（将添加到角色模板）
+            role: Agent role type (通用助手/数据分析师/数学老师/etc.) / 智能体角色类型
             memory_enabled: Enable conversation memory / 启用对话记忆
             max_memory_tokens: Max tokens for memory / 记忆的最大令牌数
             max_iterations: Max reasoning iterations / 最大推理迭代次数
+            use_react: Use ReAct reasoning template / 使用ReAct推理模板
         """
         self.name = name
         self.llm_client = llm_client
         self.tools = {tool.name: tool for tool in (tools or [])}
-        self.system_prompt = system_prompt or self._default_system_prompt()
+        self.role = role
+        self.use_react = use_react
+        self.custom_instructions = system_prompt or ""
+        
+        # Generate system prompt using template
+        tools_list = list(self.tools.values())
+        if tools_list and 'get_system_prompt' in globals():
+            tools_desc = format_tools_description(tools_list)
+            self.system_prompt = get_system_prompt(
+                tools_description=tools_desc,
+                role=role,
+                custom_instructions=self.custom_instructions,
+                use_react=use_react
+            )
+        else:
+            self.system_prompt = self._default_system_prompt()
+        
         self.memory_enabled = memory_enabled
         self.max_memory_tokens = max_memory_tokens
         self.max_iterations = max_iterations
@@ -107,6 +138,132 @@ If you don't need any tools, respond normally to the user.
 
         return base_prompt
 
+    def run_stream(
+        self,
+        task: str,
+        context: Optional[Dict[str, Any]] = None,
+        callback=None
+    ):
+        """
+        Execute a task using the agent with streaming output.
+        使用智能体执行任务并流式输出。
+        
+        This method yields updates as they happen, allowing for real-time display.
+        此方法在更新发生时产生它们，允许实时显示。
+        
+        Args:
+            task: Task description / 任务描述
+            context: Additional context / 额外上下文
+            callback: Optional callback function(event_type, content) / 可选的回调函数
+            
+        Yields:
+            Dict with event type and content / 包含事件类型和内容的字典
+        """
+        messages = self._prepare_messages(task, context)
+        
+        iteration = 0
+        while iteration < self.max_iterations:
+            iteration += 1
+            
+            yield {
+                "type": "iteration",
+                "iteration": iteration,
+                "content": f"🔄 第 {iteration} 轮推理..."
+            }
+            
+            # Stream LLM response
+            response = self.llm_client.chat(messages, stream=True)
+            
+            if not response.get("success"):
+                error_msg = f"LLM API error: {response.get('error')}"
+                yield {"type": "error", "content": error_msg}
+                return
+            
+            # Collect streaming content
+            full_content = ""
+            if response.get("stream"):
+                yield {"type": "thought_start", "content": "💭 思考中: "}
+                for chunk in self.llm_client.parse_stream(response["response"]):
+                    full_content += chunk
+                    yield {"type": "thought_chunk", "content": chunk}
+                yield {"type": "thought_end", "content": "\n"}
+            else:
+                full_content = response["content"]
+                yield {"type": "thought", "content": f"💭 思考: {full_content}\n"}
+            
+            self._log_execution("llm_response", full_content)
+            
+            # Try to extract final_answer first
+            final_answer = self._extract_final_answer(full_content)
+            if final_answer:
+                if self.memory_enabled:
+                    self.conversation_history.append({
+                        "role": "user",
+                        "content": task
+                    })
+                    self.conversation_history.append({
+                        "role": "assistant",
+                        "content": final_answer
+                    })
+                
+                yield {"type": "final_answer", "content": f"\n✅ 最终答案: {final_answer}"}
+                return
+            
+            # Try to parse tool call
+            tool_call = self._parse_tool_call(full_content)
+            
+            if tool_call:
+                # Show tool execution
+                tool_name = tool_call.get("tool", "unknown")
+                params = tool_call.get("parameters", {})
+                
+                yield {
+                    "type": "tool_call",
+                    "content": f"🛠️  调用工具: {tool_name}\n   参数: {json.dumps(params, ensure_ascii=False)}\n"
+                }
+                
+                # Execute the tool
+                tool_result = self._execute_tool(tool_call)
+                
+                yield {
+                    "type": "tool_result",
+                    "content": f"📊 工具结果: {json.dumps(tool_result, ensure_ascii=False)}\n"
+                }
+                
+                # Add to messages
+                messages.append({
+                    "role": "assistant",
+                    "content": full_content
+                })
+                
+                observation = f"Observation: {json.dumps(tool_result, ensure_ascii=False)}"
+                messages.append({
+                    "role": "user",
+                    "content": observation
+                })
+                
+                if self.memory_enabled:
+                    self.conversation_history.extend([
+                        {"role": "assistant", "content": full_content},
+                        {"role": "user", "content": observation}
+                    ])
+            else:
+                # No tool call and no final_answer
+                if self.memory_enabled:
+                    self.conversation_history.append({
+                        "role": "user",
+                        "content": task
+                    })
+                    self.conversation_history.append({
+                        "role": "assistant",
+                        "content": full_content
+                    })
+                
+                yield {"type": "response", "content": full_content}
+                return
+        
+        yield {"type": "max_iterations", "content": "⚠️ 达到最大迭代次数"}
+
     def run(
         self,
         task: str,
@@ -142,27 +299,49 @@ If you don't need any tools, respond normally to the user.
 
             content = response["content"]
             self._log_execution("llm_response", content)
+            
+            # Try to extract final_answer first
+            final_answer = self._extract_final_answer(content)
+            if final_answer:
+                # This is the final answer, return it
+                if self.memory_enabled:
+                    self.conversation_history.append({
+                        "role": "user",
+                        "content": task
+                    })
+                    self.conversation_history.append({
+                        "role": "assistant",
+                        "content": final_answer
+                    })
+                return final_answer
 
+            # Try to parse tool call
             tool_call = self._parse_tool_call(content)
 
             if tool_call:
+                # Execute the tool
                 tool_result = self._execute_tool(tool_call)
 
+                # Add assistant's reasoning and tool call to messages
                 messages.append({
                     "role": "assistant",
                     "content": content
                 })
+                
+                # Add tool result as observation
+                observation = f"Observation: {json.dumps(tool_result, ensure_ascii=False)}"
                 messages.append({
                     "role": "user",
-                    "content": f"Tool result: {json.dumps(tool_result)}"
+                    "content": observation
                 })
 
                 if self.memory_enabled:
                     self.conversation_history.extend([
                         {"role": "assistant", "content": content},
-                        {"role": "user", "content": f"Tool result: {json.dumps(tool_result)}"}
+                        {"role": "user", "content": observation}
                     ])
             else:
+                # No tool call and no final_answer, treat as direct response
                 if self.memory_enabled:
                     self.conversation_history.append({
                         "role": "user",
@@ -176,6 +355,38 @@ If you don't need any tools, respond normally to the user.
                 return content
 
         return "Maximum iterations reached. Task may be incomplete."
+    
+    def _extract_final_answer(self, content: str) -> Optional[str]:
+        """
+        Extract final answer from ReAct format response.
+        从ReAct格式响应中提取最终答案。
+        
+        Args:
+            content: LLM response content
+            
+        Returns:
+            Final answer string or None
+        """
+        # Try to extract from JSON
+        json_match = re.search(r'```json\s*(\{.*?\})\s*```', content, re.DOTALL)
+        
+        if json_match:
+            try:
+                data = json.loads(json_match.group(1))
+                if "final_answer" in data:
+                    return data["final_answer"]
+            except json.JSONDecodeError:
+                pass
+        
+        # Try to parse entire content as JSON
+        try:
+            data = json.loads(content)
+            if "final_answer" in data:
+                return data["final_answer"]
+        except (json.JSONDecodeError, TypeError):
+            pass
+        
+        return None
 
     def _prepare_messages(
         self,
@@ -210,6 +421,9 @@ If you don't need any tools, respond normally to the user.
         """
         Parse tool call from LLM response.
         从LLM响应中解析工具调用。
+        
+        Supports both old format (tool/parameters) and new ReAct format (action/action_input).
+        支持旧格式（tool/parameters）和新ReAct格式（action/action_input）。
 
         Args:
             content: LLM response content / LLM响应内容
@@ -217,20 +431,50 @@ If you don't need any tools, respond normally to the user.
         Returns:
             Tool call dict or None / 工具调用字典或None
         """
+        # Try to extract JSON from markdown code block
         json_match = re.search(r'```json\s*(\{.*?\})\s*```', content, re.DOTALL)
 
         if json_match:
             try:
-                tool_call = json.loads(json_match.group(1))
-                if "tool" in tool_call:
-                    return tool_call
+                data = json.loads(json_match.group(1))
+                
+                # Check for final_answer (end of reasoning)
+                if "final_answer" in data:
+                    return None  # No tool call, this is the final answer
+                
+                # New ReAct format: action/action_input
+                if "action" in data and "action_input" in data:
+                    return {
+                        "tool": data["action"],
+                        "parameters": data["action_input"]
+                    }
+                
+                # Old format: tool/parameters
+                if "tool" in data:
+                    return data
+                    
             except json.JSONDecodeError:
                 pass
 
+        # Try to parse the entire content as JSON
         try:
-            tool_call = json.loads(content)
-            if "tool" in tool_call:
-                return tool_call
+            data = json.loads(content)
+            
+            # Check for final_answer
+            if "final_answer" in data:
+                return None
+            
+            # New ReAct format
+            if "action" in data and "action_input" in data:
+                return {
+                    "tool": data["action"],
+                    "parameters": data["action_input"]
+                }
+            
+            # Old format
+            if "tool" in data:
+                return data
+                
         except (json.JSONDecodeError, TypeError):
             pass
 

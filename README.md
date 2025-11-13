@@ -2,10 +2,7 @@
 
 <div align="center">
 
-# LLM Agent Creator / LLM智能体创建器
-
 > A complete solution integrating frontend UI and Python agent framework  
-> 一个集成了前端界面和Python智能体框架的完整解决方案
 
 ![Python](https://img.shields.io/badge/Python-3.8+-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black)
@@ -22,17 +19,28 @@
 
 ## 🎉 What's New! / 新功能！
 
-### Latest Updates (2024-11-12)
+### Latest Updates (2025-11-13) - Version 1.0
 
-🚀 **Major Feature Release!** Five powerful new features added:
+🚀 **Major Release - Production Ready!** Complete agent framework with advanced features:
 
+#### 🌟 Core Features
 1. **🤖 AI-Powered Tool Generation** - Generate custom tools using LLM! No coding required.
-2. **🔍 Smart Tool Indexing** - Automatically find relevant tools, save 50-80% in tokens.
-3. **💻 CLI Mode** - Full command-line interface for terminal users.
-4. **✅ Optimized Testing** - Connection tests now cost 97% less!
-5. **📦 Tool Database** - Organized storage and management for all tools.
+2. **🧠 ReAct Reasoning Mode** - Advanced reasoning with thought-action-observation loops.
+3. **👥 Multiple Agent Roles** - Pre-configured roles: 通用助手, 数据分析师, 数学老师, 代码助手, 研究助手.
+4. **💾 Agent Persistence** - Save and load agent configurations.
+5. **🌊 Streaming Output** - Real-time streaming for better user experience.
 
-📖 **[See Full Details →](./IMPLEMENTATION_SUMMARY.md)** | **[Quick Start →](./GETTING_STARTED.md)**
+#### 🎨 Dual Interface
+- **🌐 Streamlit GUI** - Beautiful web interface with real-time streaming
+- **� Enhanced CLI** - Full-featured command-line interface for developers
+
+#### 🛠️ Tool Management
+- 10 built-in tools (Math, Python REPL, Data Analysis, etc.)
+- AI tool generation with natural language
+- Custom tool support
+- Organized tool storage and management
+
+📖 **[See Documentation →](./docs/python-framework/)** | **[Quick Start →](./docs/python-framework/2025-11-12_QUICKSTART.md)** | **[Release Notes →](./docs/changelog/2025-11-13_RELEASE_v1.0.md)**
 
 ---
 
@@ -51,25 +59,35 @@ A complete platform for building and managing LLM agents, including:
 
 ### 🗂️ Project Structure
 
-📖 **[See Detailed Structure →](./PROJECT_STRUCTURE.md)**
+📖 **[See Detailed Structure →](./docs/python-framework/2025-11-12_PROJECT_STRUCTURE.md)**
 
 ```
 LLM-agent-creator/
-├── 📁 python-agent-framework/    # ⭐ Main Python Framework
-│   ├── core/                      # Core: Agent, LLM Client, Tools
-│   ├── utils/                     # ⭐ NEW: Tool Generator, Indexer
-│   ├── tools/                     # Built-in + Generated tools
-│   ├── gui/                       # Streamlit GUI (with tool generation)
-│   ├── cli.py                     # ⭐ NEW: CLI interface
+├── 📁 python-agent-framework/    # ⭐ Main Python Framework (v1.0)
+│   ├── core/                      # Core: Agent, LLM Client, Tools, Prompts
+│   │   ├── agent.py               # Agent with ReAct reasoning
+│   │   ├── llm_client.py          # LLM client with streaming
+│   │   ├── prompts.py             # ReAct templates & role configs
+│   │   └── tool.py                # Base tool class
+│   ├── utils/                     # Tool Generator, Storage, Dynamic Loader
+│   ├── tools/                     # 10 built-in tools + generated tools
+│   ├── gui/                       # 🌐 Streamlit GUI (streaming support)
+│   │   └── app.py                 # Full-featured web interface
+│   ├── cli.py                     # 📟 Enhanced CLI interface
+│   ├── agents_data/               # Saved agent configurations
+│   ├── tools_data/                # Tool metadata & generated tools
 │   └── examples/                  # Usage examples
 │
 ├── 📁 src/                        # React frontend (optional)
-├── 📁 docs/                       # Documentation
-│   └── python-framework/          # Framework guides
-│       └── NEW_FEATURES.md        # ⭐ New features guide
+├── 📁 docs/                       # 📚 Documentation
+│   ├── python-framework/          # Framework guides
+│   │   ├── 2025-11-12_QUICKSTART.md
+│   │   ├── 2025-11-12_PROJECT_STRUCTURE.md
+│   │   ├── 2025-11-12_TOOL_QUICKSTART.md
+│   │   ├── 2025-11-13_CLI_GUIDE.md           # ⭐ CLI usage guide
+│   │   └── 2025-11-13_STREAMING_FEATURE.md   # ⭐ Streaming docs
+│   └── changelog/                 # Version history
 │
-├── 📄 GETTING_STARTED.md          # ⭐ Quick start guide
-├── 📄 IMPLEMENTATION_SUMMARY.md   # ⭐ Features summary
 └── 📄 README.md                   # This file
 ```
 
@@ -90,12 +108,22 @@ cp .env.example .env
 
 # 4. Choose your interface:
 
-# Option A: Streamlit GUI (Recommended)
+# Option A: Streamlit GUI (Recommended for visual interaction)
 streamlit run gui/app.py
 
-# Option B: CLI Mode
+# Option B: CLI Mode (Recommended for developers)
 python cli.py
 ```
+
+**First Time Setup:**
+1. Configure LLM (API URL, Key, Model)
+2. Create an agent with desired role and tools
+3. Start chatting with streaming output!
+
+📖 **Detailed Guides:**
+- [Quick Start Guide](./docs/python-framework/2025-11-12_QUICKSTART.md)
+- [CLI Guide](./docs/python-framework/2025-11-13_CLI_GUIDE.md)
+- [Streaming Feature](./docs/python-framework/2025-11-13_STREAMING_FEATURE.md)
 
 #### Frontend (Optional)
 
@@ -112,23 +140,56 @@ npm run build
 
 ### 📚 Documentation
 
-See [docs/README.md](./docs/README.md) for detailed documentation.
+See [docs/README.md](./docs/README.md) for complete documentation index.
 
 **Recommended Reading Order**:
-1. [Quick Start](./docs/python-framework/QUICKSTART.md)
-2. [Project Structure](./docs/python-framework/PROJECT_STRUCTURE.md)
-3. [Tool Quick Start](./docs/python-framework/TOOL_QUICKSTART.md)
+1. [Quick Start](./docs/python-framework/2025-11-12_QUICKSTART.md) - Get started in 5 minutes
+2. [Project Structure](./docs/python-framework/2025-11-12_PROJECT_STRUCTURE.md) - Understand the codebase
+3. [Tool Quick Start](./docs/python-framework/2025-11-12_TOOL_QUICKSTART.md) - Create custom tools
+4. [CLI Guide](./docs/python-framework/2025-11-13_CLI_GUIDE.md) - Command-line interface
+5. [Streaming Feature](./docs/python-framework/2025-11-13_STREAMING_FEATURE.md) - Real-time output
+
+**Version 1.0 Highlights:**
+- 🧠 ReAct reasoning with role templates
+- 🌊 Streaming output in both GUI and CLI
+- 💾 Agent persistence system
+- 🤖 AI-powered tool generation
+- 📟 Full-featured CLI interface
 
 ### ✨ Key Features
 
-#### Python Agent Framework
+#### Python Agent Framework (v1.0)
 
-- 🛠️ **Flexible Tool System** - Easy custom tool creation
-- 🤖 **Multi-Agent Orchestration** - Sequential, parallel, hierarchical patterns
-- 🔌 **API-Agnostic** - Works with any LLM API (OpenAI, Claude, etc.)
-- 🎨 **Modern GUI** - Streamlit-based interface
-- 💾 **Persistent Storage** - Supabase integration for conversation history
-- 📊 **Research-Oriented** - Built-in scientific computing and data analysis tools
+**🧠 Advanced Reasoning**
+- 🎯 **ReAct Mode** - Thought-Action-Observation reasoning loop
+- � **Role Templates** - 5 pre-configured roles (通用助手, 数据分析师, 数学老师, 代码助手, 研究助手)
+- 🔄 **Iterative Execution** - Multi-step task solving with tool calls
+
+**🌊 Streaming & Real-time**
+- 💬 **Streaming Chat** - Real-time output in both GUI and CLI
+- 👀 **Visible Reasoning** - See every thought, tool call, and result
+- ⚡ **Immediate Feedback** - No waiting for complete responses
+
+**🛠️ Tool Ecosystem**
+- 📦 **10 Built-in Tools** - Math, Python REPL, Data Analysis, File I/O, etc.
+- 🤖 **AI Tool Generation** - Create tools using natural language
+- 💾 **Tool Persistence** - Organized storage and management
+- 🔌 **Easy Extension** - Simple tool creation framework
+
+**💾 Agent Management**
+- 📋 **Save/Load Agents** - Persistent agent configurations
+- 🎨 **Custom Instructions** - Personalize agent behavior
+- 🔧 **Flexible Configuration** - Choose tools, roles, and settings
+
+**🎨 Dual Interface**
+- 🌐 **Streamlit GUI** - Beautiful web interface with drag-and-drop
+- � **Enhanced CLI** - Full-featured terminal interface with colors
+- 🔄 **Feature Parity** - Both interfaces have identical capabilities
+
+**🔌 Integration**
+- 🌍 **API-Agnostic** - Works with any LLM API (OpenAI, Claude, etc.)
+- 📊 **Research-Oriented** - Built-in scientific computing tools
+- 🐍 **Pure Python** - No complex dependencies
 
 #### Web Frontend
 
@@ -138,18 +199,26 @@ See [docs/README.md](./docs/README.md) for detailed documentation.
 
 ### 🛠️ Tech Stack
 
-**Backend**:
+**Python Framework (v1.0)**:
 - Python 3.8+
-- Streamlit
-- Supabase
-- NumPy, Pandas, Matplotlib
+- Streamlit (Web GUI)
+- Rich terminal formatting (CLI)
+- OpenAI-compatible APIs
+- JSON-based storage
 
-**Frontend**:
+**Frontend (Optional)**:
 - React 18
 - TypeScript
 - Vite
 - Tailwind CSS
-- Supabase Client
+
+**Core Dependencies**:
+```
+openai
+streamlit
+python-dotenv
+requests
+```
 
 ### 📖 Examples
 
@@ -217,9 +286,24 @@ pip install -r requirements.txt
 cp .env.example .env
 # 编辑 .env 填入你的API密钥
 
-# 4. 运行Streamlit GUI
+# 4. 选择界面启动：
+
+# 方式A: Streamlit图形界面（推荐用于可视化交互）
 streamlit run gui/app.py
+
+# 方式B: CLI命令行模式（推荐用于开发者）
+python cli.py
 ```
+
+**首次使用步骤：**
+1. 配置LLM（API地址、密钥、模型）
+2. 创建智能体（选择角色和工具）
+3. 开始对话（支持流式输出）！
+
+📖 **详细指南：**
+- [快速开始](./docs/python-framework/2025-11-12_QUICKSTART.md)
+- [CLI使用指南](./docs/python-framework/2025-11-13_CLI_GUIDE.md)
+- [流式输出功能](./docs/python-framework/2025-11-13_STREAMING_FEATURE.md)
 
 #### 前端界面
 
@@ -238,26 +322,54 @@ npm run build
 
 详细文档请查看 [docs/README.md](./docs/README.md)
 
-**快速链接**：
-- 📖 [快速参考](./QUICK_REFERENCE.md) - 常用命令和配置
-- 📋 [项目结构](./PROJECT_STRUCTURE.md) - 详细的目录说明
-- 📝 [整理总结](./REORGANIZATION_SUMMARY.md) - 项目整理记录
-
 **推荐阅读顺序**：
-1. [快速开始](./docs/python-framework/QUICKSTART.md)
-2. [项目结构](./docs/python-framework/PROJECT_STRUCTURE.md)
-3. [工具快速入门](./docs/python-framework/TOOL_QUICKSTART.md)
+1. [快速开始](./docs/python-framework/2025-11-12_QUICKSTART.md) - 5分钟上手
+2. [项目结构](./docs/python-framework/2025-11-12_PROJECT_STRUCTURE.md) - 理解代码结构
+3. [工具快速入门](./docs/python-framework/2025-11-12_TOOL_QUICKSTART.md) - 创建自定义工具
+4. [CLI使用指南](./docs/python-framework/2025-11-13_CLI_GUIDE.md) - 命令行界面
+5. [流式输出功能](./docs/python-framework/2025-11-13_STREAMING_FEATURE.md) - 实时输出
+
+**v1.0 版本亮点：**
+- 🧠 ReAct推理模式与角色模板
+- 🌊 GUI和CLI双界面流式输出
+- 💾 智能体持久化系统
+- 🤖 AI驱动的工具生成
+- 📟 功能完整的CLI界面
 
 ### ✨ 主要特性
 
-#### Python Agent Framework
+#### Python Agent Framework (v1.0)
 
-- 🛠️ **灵活的工具系统** - 轻松创建自定义工具
-- 🤖 **多智能体协作** - 支持顺序、并行、层次化协作模式
-- 🔌 **API无关性** - 支持任意LLM API（OpenAI、Claude等）
-- 🎨 **现代化GUI** - 基于Streamlit的交互界面
-- 💾 **持久化存储** - Supabase集成，保存对话历史
-- 📊 **科研导向** - 内置科学计算、数据分析工具
+**🧠 高级推理**
+- 🎯 **ReAct模式** - 思考-行动-观察推理循环
+- � **角色模板** - 5个预配置角色（通用助手、数据分析师、数学老师、代码助手、研究助手）
+- 🔄 **迭代执行** - 多步骤任务求解与工具调用
+
+**🌊 流式与实时**
+- 💬 **流式聊天** - GUI和CLI双界面实时输出
+- 👀 **可见推理** - 看到每一步思考、工具调用和结果
+- ⚡ **即时反馈** - 无需等待完整响应
+
+**🛠️ 工具生态**
+- 📦 **10个内置工具** - 数学计算、Python执行、数据分析、文件操作等
+- 🤖 **AI工具生成** - 使用自然语言创建工具
+- 💾 **工具持久化** - 有组织的存储和管理
+- 🔌 **易于扩展** - 简单的工具创建框架
+
+**💾 智能体管理**
+- 📋 **保存/加载智能体** - 持久化智能体配置
+- 🎨 **自定义指令** - 个性化智能体行为
+- 🔧 **灵活配置** - 选择工具、角色和设置
+
+**🎨 双界面**
+- 🌐 **Streamlit GUI** - 美观的Web界面
+- 📟 **增强CLI** - 全功能终端界面（彩色输出）
+- 🔄 **功能对等** - 两个界面功能完全一致
+
+**� 集成能力**
+- 🌍 **API无关** - 支持任何LLM API（OpenAI、Claude等）
+- 📊 **科研导向** - 内置科学计算工具
+- 🐍 **纯Python** - 无复杂依赖
 
 #### Web Frontend
 
@@ -267,18 +379,26 @@ npm run build
 
 ### 🛠️ 技术栈
 
-**后端**：
+**Python框架 (v1.0)**：
 - Python 3.8+
-- Streamlit
-- Supabase
-- NumPy, Pandas, Matplotlib
+- Streamlit（Web界面）
+- Rich终端格式化（CLI）
+- OpenAI兼容API
+- JSON数据存储
 
-**前端**：
+**前端（可选）**：
 - React 18
 - TypeScript
 - Vite
 - Tailwind CSS
-- Supabase Client
+
+**核心依赖**：
+```
+openai
+streamlit
+python-dotenv
+requests
+```
 
 ### � 使用示例
 

@@ -133,10 +133,23 @@ class LLMClient:
                     self.api_url,
                     headers=headers,
                     json=payload,
-                    timeout=self.timeout
+                    timeout=self.timeout,
+                    stream=stream
                 )
 
                 response.raise_for_status()
+                
+                # If streaming, return the response object for iteration
+                if stream:
+                    return {
+                        "success": True,
+                        "stream": True,
+                        "response": response,
+                        "model": self.model,
+                        "timestamp": datetime.now().isoformat()
+                    }
+                
+                # Non-streaming response
                 result = response.json()
 
                 self.request_count += 1
@@ -165,6 +178,30 @@ class LLMClient:
             "error": "Max retries exceeded",
             "timestamp": datetime.now().isoformat()
         }
+    
+    def parse_stream(self, response):
+        """
+        Parse streaming response from OpenAI-compatible API.
+        解析OpenAI兼容API的流式响应。
+        
+        Yields:
+            str: Content chunks as they arrive
+        """
+        for line in response.iter_lines():
+            if line:
+                line = line.decode('utf-8')
+                if line.startswith('data: '):
+                    data = line[6:]  # Remove 'data: ' prefix
+                    if data == '[DONE]':
+                        break
+                    try:
+                        chunk = json.loads(data)
+                        if 'choices' in chunk and len(chunk['choices']) > 0:
+                            delta = chunk['choices'][0].get('delta', {})
+                            if 'content' in delta:
+                                yield delta['content']
+                    except json.JSONDecodeError:
+                        continue
 
     def _claude_chat(
         self,

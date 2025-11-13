@@ -1,0 +1,17 @@
+{
+  "name": "MathCalculator",
+  "description": "A high-precision calculator that evaluates a given mathematical expression string and returns its numerical result. It can handle complex arithmetic, parentheses, exponentiation, and common mathematical functions (e.g., sin, cos, log, pi).",
+  "file_path": "/Users/acquent/Desktop/Project Process/Github_Desktop/LLM-agent-creator/python-agent-framework/tools/generated/mathcalculator.py",
+  "created_at": "2025-11-13T14:07:03.479229",
+  "input_parameters": [
+    {
+      "name": "expression",
+      "type": "str",
+      "description": "The mathematical expression string to be calculated. e.g., \"(10 + 5^2) / sin(pi/2)\""
+    }
+  ],
+  "expected_output": "Returns the final numerical result of the calculation as a string or float. If the expression is invalid or calculation fails (e.g., division by zero, syntax error), returns a clear error message string.",
+  "dependencies": [
+    "sympy"
+  ]
+}

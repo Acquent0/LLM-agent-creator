@@ -33,7 +33,7 @@ def test_llm_connection():
     
     # API configuration from user
     api_url = "https://api.metaihub.cn/v1/chat/completions"
-    api_key = "sk-aeASZGvP8mU82z2HBbE9B1Aa5fA14522A2D07a102134978d"
+    api_key = "**"
     model = "gpt-4o-mini"
     
     print(f"API URL: {api_url}")
